@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VendorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -38,41 +39,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     
-    // User profile
-    Route::get('/user', function (Request $request) {
-        $user = $request->user();
-        return response()->json([
-            'success' => true,
-            'message' => 'User profile retrieved',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'first_name' => $user->first_name,
-                    'last_name' => $user->last_name,
-                    'full_name' => $user->full_name,
-                    'email' => $user->email,
-                    'phone_code' => $user->phone_code,
-                    'phone' => $user->phone,
-                    'full_phone' => $user->full_phone,
-                    'role' => $user->role,
-                    'status' => $user->status,
-                    'email_verified' => $user->is_email_verified,
-                    'phone_verified' => $user->is_phone_verified,
-                    'avatar' => $user->avatar,
-                    'bio' => $user->bio,
-                    'country' => $user->country,
-                    'state' => $user->state,
-                    'city' => $user->city,
-                    'full_location' => $user->full_location,
-                    'timezone' => $user->timezone,
-                    'last_login' => $user->last_login,
-                    'created_at' => $user->created_at->toIso8601String()
-                ]
-            ]
-        ]);
-    });
+    // User profile (non-admin only)
+    Route::get('/user', [UserController::class, 'show']);
+    Route::put('/user', [UserController::class, 'update']);
     
-    // Vendor routes
+    // User password change (non-admin only)
+    Route::post('/user/change-password/request-code', [UserController::class, 'requestPasswordChangeCode']);
+    Route::post('/user/change-password/confirm', [UserController::class, 'confirmPasswordChange']);
+    
+    // User email change (non-admin only)
+    Route::post('/user/change-email/request-code', [UserController::class, 'requestEmailChangeCode']);
+    Route::post('/user/change-email/confirm', [UserController::class, 'confirmEmailChange']);
+    
+    // Vendor routes (non-admin only)
     Route::prefix('vendor')->group(function () {
         Route::get('/me', [VendorController::class, 'me']);
         Route::post('/apply', [VendorController::class, 'apply']);
