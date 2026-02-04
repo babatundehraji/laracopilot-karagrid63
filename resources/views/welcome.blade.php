@@ -36,10 +36,14 @@
                     <p class="text-gray-600 text-sm">Connect customers with service providers</p>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <i class="fas fa-chart-line text-3xl text-orange-600 mb-3"></i>
+                    <i class="fas fa-shield-alt text-3xl text-orange-600 mb-3"></i>
                     <h3 class="font-semibold text-lg mb-2">Admin Dashboard</h3>
-                    <p class="text-gray-600 text-sm">Manage users, vendors, and services</p>
+                    <p class="text-gray-600 text-sm">Manage users, vendors, and orders</p>
                 </div>
+            </div>
+
+            <div class="mt-12 text-gray-500 text-sm">
+                <p>© {{ date('Y') }} Sucheus. All rights reserved.</p>
             </div>
         </div>
     </div>

@@ -10,6 +10,9 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -19,56 +22,78 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // Key statistics
-        $totalUsers = User::where('role', '!=', 'admin')->count();
-        $totalVendors = Vendor::count();
-        $approvedVendors = Vendor::where('status', 'approved')->count();
-        $pendingVendors = Vendor::where('status', 'pending')->count();
-        $totalServices = Service::count();
-        
-        $totalOrders = Order::count();
-        $pendingOrders = Order::where('status', 'pending')->count();
-        $activeOrders = Order::whereIn('status', ['confirmed', 'in_progress'])->count();
-        $completedOrders = Order::where('status', 'completed')->count();
-        $disputedOrders = Order::where('status', 'disputed')->count();
-        
-        $totalTransactionsSum = Transaction::sum('amount');
-        $totalDisputes = Dispute::count();
-        $openDisputes = Dispute::where('status', 'open')->count();
+        try {
+            $admin = Auth::guard('web')->user();
 
-        // Recent data
-        $recentUsers = User::where('role', '!=', 'admin')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+            // Get dashboard statistics
+            $stats = [
+                // Users
+                'total_users' => User::where('role', '!=', 'admin')->count(),
+                
+                // Vendors
+                'total_vendors' => Vendor::count(),
+                'approved_vendors' => Vendor::where('status', 'approved')->count(),
+                'pending_vendors' => Vendor::where('status', 'pending')->count(),
+                
+                // Services
+                'total_services' => Service::count(),
+                'approved_services' => Service::where('status', 'approved')->count(),
+                
+                // Orders by status
+                'pending_orders' => Order::where('status', 'pending')->count(),
+                'active_orders' => Order::whereIn('status', ['confirmed', 'in_progress'])->count(),
+                'completed_orders' => Order::where('status', 'completed')->count(),
+                'disputed_orders' => Order::where('status', 'disputed')->count(),
+                'total_orders' => Order::count(),
+                
+                // Disputes
+                'total_disputes' => Dispute::count(),
+                'open_disputes' => Dispute::whereIn('status', ['pending', 'under_review'])->count(),
+                
+                // Transaction volume
+                'transaction_volume' => Transaction::where('status', 'completed')->sum('amount'),
+                'total_transactions' => Transaction::count(),
+            ];
 
-        $recentOrders = Order::with(['service', 'customer'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+            // Latest users (non-admin)
+            $latestUsers = User::where('role', '!=', 'admin')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
 
-        $recentVendors = Vendor::with('user')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+            // Latest vendors
+            $latestVendors = Vendor::with('user')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
 
-        return view('admin.dashboard', compact(
-            'totalUsers',
-            'totalVendors',
-            'approvedVendors',
-            'pendingVendors',
-            'totalServices',
-            'totalOrders',
-            'pendingOrders',
-            'activeOrders',
-            'completedOrders',
-            'disputedOrders',
-            'totalTransactionsSum',
-            'totalDisputes',
-            'openDisputes',
-            'recentUsers',
-            'recentOrders',
-            'recentVendors'
-        ));
+            // Latest orders
+            $latestOrders = Order::with(['user', 'vendor', 'service'])
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+
+            // Latest disputes
+            $latestDisputes = Dispute::with(['order.user', 'order.vendor', 'customer'])
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+
+            return view('admin.dashboard.index', compact(
+                'admin',
+                'stats',
+                'latestUsers',
+                'latestVendors',
+                'latestOrders',
+                'latestDisputes'
+            ));
+        } catch (\Exception $e) {
+            Log::error('Failed to load admin dashboard', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with('error', 'Failed to load dashboard data: ' . $e->getMessage());
+        }
     }
 }
