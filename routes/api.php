@@ -34,24 +34,24 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
 
-// Protected routes (require Sanctum authentication)
-Route::middleware('auth:sanctum')->group(function () {
+// Protected routes (require Sanctum authentication + reject admin users)
+Route::middleware(['auth:sanctum', 'reject.admin'])->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     
-    // User profile (non-admin only)
+    // User profile
     Route::get('/user', [UserController::class, 'show']);
     Route::put('/user', [UserController::class, 'update']);
     
-    // User password change (non-admin only)
+    // User password change
     Route::post('/user/change-password/request-code', [UserController::class, 'requestPasswordChangeCode']);
     Route::post('/user/change-password/confirm', [UserController::class, 'confirmPasswordChange']);
     
-    // User email change (non-admin only)
+    // User email change
     Route::post('/user/change-email/request-code', [UserController::class, 'requestEmailChangeCode']);
     Route::post('/user/change-email/confirm', [UserController::class, 'confirmEmailChange']);
     
-    // Vendor routes (non-admin only)
+    // Vendor routes
     Route::prefix('vendor')->group(function () {
         Route::get('/me', [VendorController::class, 'me']);
         Route::post('/apply', [VendorController::class, 'apply']);

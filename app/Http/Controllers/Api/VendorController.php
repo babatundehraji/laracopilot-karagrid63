@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\Transaction;
@@ -12,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
-class VendorController extends Controller
+class VendorController extends BaseController
 {
     /**
      * Get current user's vendor profile
@@ -27,59 +26,47 @@ class VendorController extends Controller
             $vendor = Vendor::where('user_id', $user->id)->first();
 
             if (!$vendor) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'No vendor profile found',
-                    'data' => null
-                ], 200);
+                return $this->success(null, 'No vendor profile found');
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Vendor profile retrieved',
-                'data' => [
-                    'vendor' => [
-                        'id' => $vendor->id,
-                        'user_id' => $vendor->user_id,
-                        'business_name' => $vendor->business_name,
-                        'business_type' => $vendor->business_type,
-                        'tax_id' => $vendor->tax_id,
-                        'country_id' => $vendor->country_id,
-                        'state_id' => $vendor->state_id,
-                        'city_id' => $vendor->city_id,
-                        'address_line1' => $vendor->address_line1,
-                        'address_line2' => $vendor->address_line2,
-                        'postal_code' => $vendor->postal_code,
-                        'phone_code' => $vendor->phone_code,
-                        'phone' => $vendor->phone,
-                        'full_phone' => $vendor->full_phone,
-                        'payout_method' => $vendor->payout_method,
-                        'payout_currency' => $vendor->payout_currency,
-                        'bank_name' => $vendor->bank_name,
-                        'bank_account_name' => $vendor->bank_account_name,
-                        'bank_account_number' => $vendor->bank_account_number,
-                        'bank_swift_code' => $vendor->bank_swift_code,
-                        'status' => $vendor->status,
-                        'rating' => $vendor->rating,
-                        'total_reviews' => $vendor->total_reviews,
-                        'verified' => $vendor->verified,
-                        'featured' => $vendor->featured,
-                        'created_at' => $vendor->created_at->toIso8601String(),
-                        'updated_at' => $vendor->updated_at->toIso8601String()
-                    ]
+            return $this->success([
+                'vendor' => [
+                    'id' => $vendor->id,
+                    'user_id' => $vendor->user_id,
+                    'business_name' => $vendor->business_name,
+                    'business_type' => $vendor->business_type,
+                    'tax_id' => $vendor->tax_id,
+                    'country_id' => $vendor->country_id,
+                    'state_id' => $vendor->state_id,
+                    'city_id' => $vendor->city_id,
+                    'address_line1' => $vendor->address_line1,
+                    'address_line2' => $vendor->address_line2,
+                    'postal_code' => $vendor->postal_code,
+                    'phone_code' => $vendor->phone_code,
+                    'phone' => $vendor->phone,
+                    'full_phone' => $vendor->full_phone,
+                    'payout_method' => $vendor->payout_method,
+                    'payout_currency' => $vendor->payout_currency,
+                    'bank_name' => $vendor->bank_name,
+                    'bank_account_name' => $vendor->bank_account_name,
+                    'bank_account_number' => $vendor->bank_account_number,
+                    'bank_swift_code' => $vendor->bank_swift_code,
+                    'status' => $vendor->status,
+                    'rating' => $vendor->rating,
+                    'total_reviews' => $vendor->total_reviews,
+                    'verified' => $vendor->verified,
+                    'featured' => $vendor->featured,
+                    'created_at' => $vendor->created_at->toIso8601String(),
+                    'updated_at' => $vendor->updated_at->toIso8601String()
                 ]
-            ], 200);
+            ], 'Vendor profile retrieved');
         } catch (\Exception $e) {
             Log::error('Failed to retrieve vendor profile', [
                 'user_id' => $request->user()->id,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve vendor profile',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to retrieve vendor profile', 500);
         }
     }
 
@@ -110,11 +97,7 @@ class VendorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         try {
@@ -169,26 +152,19 @@ class VendorController extends Controller
                     'business_name' => $vendor->business_name
                 ]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Vendor application submitted successfully. Your application is pending review.',
-                    'data' => [
-                        'vendor' => [
-                            'id' => $vendor->id,
-                            'business_name' => $vendor->business_name,
-                            'status' => $vendor->status,
-                            'created_at' => $vendor->created_at->toIso8601String()
-                        ]
+                return $this->success([
+                    'vendor' => [
+                        'id' => $vendor->id,
+                        'business_name' => $vendor->business_name,
+                        'status' => $vendor->status,
+                        'created_at' => $vendor->created_at->toIso8601String()
                     ]
-                ], 201);
+                ], 'Vendor application submitted successfully. Your application is pending review.', 201);
             } else {
                 // Update existing vendor (preserve status unless it's rejected)
-                // If status is approved/suspended, keep it. If pending/rejected, allow update.
                 if (in_array($vendor->status, ['approved', 'suspended'])) {
-                    // Don't change status for approved or suspended vendors
                     unset($data['status']);
                 } else {
-                    // For pending or rejected, set back to pending on re-application
                     $data['status'] = 'pending';
                 }
 
@@ -209,18 +185,14 @@ class VendorController extends Controller
                     'business_name' => $vendor->business_name
                 ]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Vendor application updated successfully',
-                    'data' => [
-                        'vendor' => [
-                            'id' => $vendor->id,
-                            'business_name' => $vendor->business_name,
-                            'status' => $vendor->status,
-                            'updated_at' => $vendor->updated_at->toIso8601String()
-                        ]
+                return $this->success([
+                    'vendor' => [
+                        'id' => $vendor->id,
+                        'business_name' => $vendor->business_name,
+                        'status' => $vendor->status,
+                        'updated_at' => $vendor->updated_at->toIso8601String()
                     ]
-                ], 200);
+                ], 'Vendor application updated successfully');
             }
         } catch (\Exception $e) {
             Log::error('Failed to apply as vendor', [
@@ -228,11 +200,7 @@ class VendorController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to submit vendor application',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to submit vendor application', 500);
         }
     }
 
@@ -263,11 +231,7 @@ class VendorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         try {
@@ -277,11 +241,7 @@ class VendorController extends Controller
             $vendor = Vendor::where('user_id', $user->id)->first();
 
             if (!$vendor) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Vendor profile not found. Please apply as a vendor first.',
-                    'data' => null
-                ], 404);
+                return $this->error('Vendor profile not found. Please apply as a vendor first.', 404);
             }
 
             // Only update provided fields
@@ -308,11 +268,7 @@ class VendorController extends Controller
             });
 
             if (empty($data)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No fields provided for update',
-                    'data' => null
-                ], 400);
+                return $this->error('No fields provided for update', 400);
             }
 
             // Update vendor (status is NOT changeable here)
@@ -333,32 +289,24 @@ class VendorController extends Controller
                 'fields_updated' => array_keys($data)
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Vendor profile updated successfully',
-                'data' => [
-                    'vendor' => [
-                        'id' => $vendor->id,
-                        'business_name' => $vendor->business_name,
-                        'business_type' => $vendor->business_type,
-                        'status' => $vendor->status,
-                        'payout_method' => $vendor->payout_method,
-                        'payout_currency' => $vendor->payout_currency,
-                        'updated_at' => $vendor->updated_at->toIso8601String()
-                    ]
+            return $this->success([
+                'vendor' => [
+                    'id' => $vendor->id,
+                    'business_name' => $vendor->business_name,
+                    'business_type' => $vendor->business_type,
+                    'status' => $vendor->status,
+                    'payout_method' => $vendor->payout_method,
+                    'payout_currency' => $vendor->payout_currency,
+                    'updated_at' => $vendor->updated_at->toIso8601String()
                 ]
-            ], 200);
+            ], 'Vendor profile updated successfully');
         } catch (\Exception $e) {
             Log::error('Failed to update vendor profile', [
                 'user_id' => $request->user()->id,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update vendor profile',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to update vendor profile', 500);
         }
     }
 
@@ -375,11 +323,7 @@ class VendorController extends Controller
             $vendor = Vendor::where('user_id', $user->id)->first();
 
             if (!$vendor) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Vendor profile not found',
-                    'data' => null
-                ], 404);
+                return $this->error('Vendor profile not found', 404);
             }
 
             // Count services
@@ -402,7 +346,7 @@ class VendorController extends Controller
             ->where('status', 'completed')
             ->count();
 
-            // Calculate total earnings (transactions where user_id is vendor's user and category is 'earning')
+            // Calculate total earnings
             $totalEarnings = Transaction::where('user_id', $user->id)
                 ->where('category', 'earning')
                 ->sum('amount');
@@ -412,38 +356,30 @@ class VendorController extends Controller
                 'vendor_id' => $vendor->id
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Vendor dashboard data retrieved',
-                'data' => [
-                    'vendor' => [
-                        'id' => $vendor->id,
-                        'business_name' => $vendor->business_name,
-                        'status' => $vendor->status,
-                        'rating' => $vendor->rating,
-                        'total_reviews' => $vendor->total_reviews
-                    ],
-                    'summary' => [
-                        'total_services' => $totalServices,
-                        'total_orders' => $totalOrders,
-                        'active_orders' => $activeOrders,
-                        'completed_orders' => $completedOrders,
-                        'total_earnings' => round($totalEarnings, 2),
-                        'currency' => $vendor->payout_currency ?? 'NGN'
-                    ]
+            return $this->success([
+                'vendor' => [
+                    'id' => $vendor->id,
+                    'business_name' => $vendor->business_name,
+                    'status' => $vendor->status,
+                    'rating' => $vendor->rating,
+                    'total_reviews' => $vendor->total_reviews
+                ],
+                'summary' => [
+                    'total_services' => $totalServices,
+                    'total_orders' => $totalOrders,
+                    'active_orders' => $activeOrders,
+                    'completed_orders' => $completedOrders,
+                    'total_earnings' => round($totalEarnings, 2),
+                    'currency' => $vendor->payout_currency ?? 'NGN'
                 ]
-            ], 200);
+            ], 'Vendor dashboard data retrieved');
         } catch (\Exception $e) {
             Log::error('Failed to retrieve vendor dashboard', [
                 'user_id' => $request->user()->id,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve dashboard data',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to retrieve dashboard data', 500);
         }
     }
 }

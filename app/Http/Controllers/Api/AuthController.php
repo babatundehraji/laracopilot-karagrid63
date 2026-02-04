@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserLoginLog;
 use App\Models\VerificationCode;
@@ -13,7 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
-class AuthController extends Controller
+class AuthController extends BaseController
 {
     /**
      * Request email verification code
@@ -26,11 +25,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         $email = $request->email;
@@ -55,25 +50,17 @@ class AuthController extends Controller
 
             Log::info('Email verification code requested', ['email' => $email]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Verification code sent to your email',
-                'data' => [
-                    'email' => $email,
-                    'expires_in_minutes' => 15
-                ]
-            ], 200);
+            return $this->success([
+                'email' => $email,
+                'expires_in_minutes' => 15
+            ], 'Verification code sent to your email');
         } catch (\Exception $e) {
             Log::error('Failed to request email code', [
                 'email' => $email,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send verification code',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to send verification code', 500);
         }
     }
 
@@ -89,11 +76,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         $email = $request->email;
@@ -107,11 +90,7 @@ class AuthController extends Controller
             );
 
             if (!$verification) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired verification code',
-                    'data' => null
-                ], 400);
+                return $this->error('Invalid or expired verification code', 400);
             }
 
             // Mark code as used
@@ -119,25 +98,17 @@ class AuthController extends Controller
 
             Log::info('Email code verified', ['email' => $email]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Email verified successfully',
-                'data' => [
-                    'email' => $email,
-                    'verified' => true
-                ]
-            ], 200);
+            return $this->success([
+                'email' => $email,
+                'verified' => true
+            ], 'Email verified successfully');
         } catch (\Exception $e) {
             Log::error('Failed to verify email code', [
                 'email' => $email,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to verify code',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to verify code', 500);
         }
     }
 
@@ -156,11 +127,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         $email = $request->email;
@@ -175,11 +142,7 @@ class AuthController extends Controller
             );
 
             if (!$verification) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired verification code',
-                    'data' => null
-                ], 400);
+                return $this->error('Invalid or expired verification code', 400);
             }
 
             // Create user
@@ -211,36 +174,28 @@ class AuthController extends Controller
 
             Log::info('User registered', ['user_id' => $user->id, 'email' => $email]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Registration successful',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'first_name' => $user->first_name,
-                        'last_name' => $user->last_name,
-                        'full_name' => $user->full_name,
-                        'email' => $user->email,
-                        'role' => $user->role,
-                        'status' => $user->status,
-                        'email_verified' => $user->is_email_verified,
-                        'avatar' => $user->avatar,
-                        'created_at' => $user->created_at->toIso8601String()
-                    ],
-                    'token' => $token
-                ]
-            ], 201);
+            return $this->success([
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'email_verified' => $user->is_email_verified,
+                    'avatar' => $user->avatar,
+                    'created_at' => $user->created_at->toIso8601String()
+                ],
+                'token' => $token
+            ], 'Registration successful', 201);
         } catch (\Exception $e) {
             Log::error('Failed to register user', [
                 'email' => $email,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Registration failed',
-                'data' => null
-            ], 500);
+            return $this->error('Registration failed', 500);
         }
     }
 
@@ -256,11 +211,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         $email = $request->email;
@@ -271,38 +222,22 @@ class AuthController extends Controller
             $user = User::where('email', $email)->first();
 
             if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid credentials',
-                    'data' => null
-                ], 401);
+                return $this->error('Invalid credentials', 401);
             }
 
             // Reject admin users
             if ($user->role === 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin users cannot login via API',
-                    'data' => null
-                ], 403);
+                return $this->error('Admin users cannot login via API', 403);
             }
 
             // Check password
             if (!Hash::check($password, $user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid credentials',
-                    'data' => null
-                ], 401);
+                return $this->error('Invalid credentials', 401);
             }
 
             // Check if user is suspended
             if ($user->status === 'suspended') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Account suspended. Please contact support.',
-                    'data' => null
-                ], 403);
+                return $this->error('Account suspended. Please contact support.', 403);
             }
 
             // Generate Sanctum token
@@ -325,37 +260,29 @@ class AuthController extends Controller
 
             Log::info('User logged in', ['user_id' => $user->id, 'email' => $email]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Login successful',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'first_name' => $user->first_name,
-                        'last_name' => $user->last_name,
-                        'full_name' => $user->full_name,
-                        'email' => $user->email,
-                        'role' => $user->role,
-                        'status' => $user->status,
-                        'email_verified' => $user->is_email_verified,
-                        'phone_verified' => $user->is_phone_verified,
-                        'avatar' => $user->avatar,
-                        'last_login' => $user->last_login
-                    ],
-                    'token' => $token
-                ]
-            ], 200);
+            return $this->success([
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'email_verified' => $user->is_email_verified,
+                    'phone_verified' => $user->is_phone_verified,
+                    'avatar' => $user->avatar,
+                    'last_login' => $user->last_login
+                ],
+                'token' => $token
+            ], 'Login successful');
         } catch (\Exception $e) {
             Log::error('Failed to login user', [
                 'email' => $email,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Login failed',
-                'data' => null
-            ], 500);
+            return $this->error('Login failed', 500);
         }
     }
 
@@ -370,11 +297,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         $email = $request->email;
@@ -385,11 +308,7 @@ class AuthController extends Controller
 
             if (!$user) {
                 // Don't reveal if user exists or not (security)
-                return response()->json([
-                    'success' => true,
-                    'message' => 'If this email exists, a password reset code has been sent',
-                    'data' => ['email' => $email]
-                ], 200);
+                return $this->success(['email' => $email], 'If this email exists, a password reset code has been sent');
             }
 
             // Generate password reset code
@@ -411,25 +330,17 @@ class AuthController extends Controller
 
             Log::info('Password reset code requested', ['email' => $email]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Password reset code sent to your email',
-                'data' => [
-                    'email' => $email,
-                    'expires_in_minutes' => 15
-                ]
-            ], 200);
+            return $this->success([
+                'email' => $email,
+                'expires_in_minutes' => 15
+            ], 'Password reset code sent to your email');
         } catch (\Exception $e) {
             Log::error('Failed to request password reset', [
                 'email' => $email,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send password reset code',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to send password reset code', 500);
         }
     }
 
@@ -446,11 +357,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         $email = $request->email;
@@ -466,22 +373,14 @@ class AuthController extends Controller
             );
 
             if (!$verification) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired reset code',
-                    'data' => null
-                ], 400);
+                return $this->error('Invalid or expired reset code', 400);
             }
 
             // Find user
             $user = User::where('email', $email)->first();
 
             if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found',
-                    'data' => null
-                ], 404);
+                return $this->error('User not found', 404);
             }
 
             // Update password
@@ -500,22 +399,14 @@ class AuthController extends Controller
 
             Log::info('Password reset successful', ['user_id' => $user->id, 'email' => $email]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Password reset successful. Please login with your new password.',
-                'data' => ['email' => $email]
-            ], 200);
+            return $this->success(['email' => $email], 'Password reset successful. Please login with your new password.');
         } catch (\Exception $e) {
             Log::error('Failed to reset password', [
                 'email' => $email,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reset password',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to reset password', 500);
         }
     }
 
@@ -529,11 +420,7 @@ class AuthController extends Controller
             $user = $request->user();
 
             if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthenticated',
-                    'data' => null
-                ], 401);
+                return $this->error('Unauthenticated', 401);
             }
 
             // Log activity before revoking token
@@ -544,21 +431,13 @@ class AuthController extends Controller
 
             Log::info('User logged out', ['user_id' => $user->id, 'email' => $user->email]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Logged out successfully',
-                'data' => null
-            ], 200);
+            return $this->success(null, 'Logged out successfully');
         } catch (\Exception $e) {
             Log::error('Failed to logout user', [
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Logout failed',
-                'data' => null
-            ], 500);
+            return $this->error('Logout failed', 500);
         }
     }
 }

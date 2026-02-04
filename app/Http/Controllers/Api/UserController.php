@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\VerificationCode;
 use App\Services\ActivityLogger;
 use App\Services\EmailService;
@@ -11,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
-class UserController extends Controller
+class UserController extends BaseController
 {
     /**
      * Get authenticated user profile
@@ -22,56 +21,39 @@ class UserController extends Controller
         try {
             $user = $request->user();
 
-            // Reject admin users
-            if ($user->role === 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin users cannot access this endpoint',
-                    'data' => null
-                ], 403);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'User profile retrieved',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'first_name' => $user->first_name,
-                        'last_name' => $user->last_name,
-                        'full_name' => $user->full_name,
-                        'email' => $user->email,
-                        'phone_code' => $user->phone_code,
-                        'phone' => $user->phone,
-                        'full_phone' => $user->full_phone,
-                        'role' => $user->role,
-                        'status' => $user->status,
-                        'email_verified' => $user->is_email_verified,
-                        'phone_verified' => $user->is_phone_verified,
-                        'avatar' => $user->avatar,
-                        'bio' => $user->bio,
-                        'country' => $user->country,
-                        'state' => $user->state,
-                        'city' => $user->city,
-                        'full_location' => $user->full_location,
-                        'timezone' => $user->timezone,
-                        'last_login' => $user->last_login,
-                        'created_at' => $user->created_at->toIso8601String(),
-                        'updated_at' => $user->updated_at->toIso8601String()
-                    ]
+            return $this->success([
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'phone_code' => $user->phone_code,
+                    'phone' => $user->phone,
+                    'full_phone' => $user->full_phone,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'email_verified' => $user->is_email_verified,
+                    'phone_verified' => $user->is_phone_verified,
+                    'avatar' => $user->avatar,
+                    'bio' => $user->bio,
+                    'country' => $user->country,
+                    'state' => $user->state,
+                    'city' => $user->city,
+                    'full_location' => $user->full_location,
+                    'timezone' => $user->timezone,
+                    'last_login' => $user->last_login,
+                    'created_at' => $user->created_at->toIso8601String(),
+                    'updated_at' => $user->updated_at->toIso8601String()
                 ]
-            ], 200);
+            ], 'User profile retrieved');
         } catch (\Exception $e) {
             Log::error('Failed to retrieve user profile', [
                 'user_id' => $request->user()->id ?? null,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve user profile',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to retrieve user profile', 500);
         }
     }
 
@@ -93,24 +75,11 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         try {
             $user = $request->user();
-
-            // Reject admin users
-            if ($user->role === 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin users cannot access this endpoint',
-                    'data' => null
-                ], 403);
-            }
 
             // Only update provided fields
             $data = array_filter($request->only([
@@ -127,11 +96,7 @@ class UserController extends Controller
             });
 
             if (empty($data)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No fields provided for update',
-                    'data' => null
-                ], 400);
+                return $this->error('No fields provided for update', 400);
             }
 
             // Update user profile
@@ -151,38 +116,30 @@ class UserController extends Controller
                 'fields_updated' => array_keys($data)
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile updated successfully',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'first_name' => $user->first_name,
-                        'last_name' => $user->last_name,
-                        'full_name' => $user->full_name,
-                        'email' => $user->email,
-                        'avatar' => $user->avatar,
-                        'bio' => $user->bio,
-                        'country' => $user->country,
-                        'state' => $user->state,
-                        'city' => $user->city,
-                        'full_location' => $user->full_location,
-                        'timezone' => $user->timezone,
-                        'updated_at' => $user->updated_at->toIso8601String()
-                    ]
+            return $this->success([
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'bio' => $user->bio,
+                    'country' => $user->country,
+                    'state' => $user->state,
+                    'city' => $user->city,
+                    'full_location' => $user->full_location,
+                    'timezone' => $user->timezone,
+                    'updated_at' => $user->updated_at->toIso8601String()
                 ]
-            ], 200);
+            ], 'Profile updated successfully');
         } catch (\Exception $e) {
             Log::error('Failed to update user profile', [
                 'user_id' => $request->user()->id ?? null,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update profile',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to update profile', 500);
         }
     }
 
@@ -194,15 +151,6 @@ class UserController extends Controller
     {
         try {
             $user = $request->user();
-
-            // Reject admin users
-            if ($user->role === 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin users cannot access this endpoint',
-                    'data' => null
-                ], 403);
-            }
 
             // Generate verification code
             $verification = VerificationCode::generate(
@@ -252,25 +200,17 @@ class UserController extends Controller
                 'email' => $user->email
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Password change code sent to your email',
-                'data' => [
-                    'email' => $user->email,
-                    'expires_in_minutes' => 15
-                ]
-            ], 200);
+            return $this->success([
+                'email' => $user->email,
+                'expires_in_minutes' => 15
+            ], 'Password change code sent to your email');
         } catch (\Exception $e) {
             Log::error('Failed to request password change code', [
                 'user_id' => $request->user()->id ?? null,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send password change code',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to send password change code', 500);
         }
     }
 
@@ -286,24 +226,11 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         try {
             $user = $request->user();
-
-            // Reject admin users
-            if ($user->role === 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin users cannot access this endpoint',
-                    'data' => null
-                ], 403);
-            }
 
             // Validate verification code
             $verification = VerificationCode::where('email', $user->email)
@@ -315,11 +242,7 @@ class UserController extends Controller
                 ->first();
 
             if (!$verification) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired verification code',
-                    'data' => null
-                ], 400);
+                return $this->error('Invalid or expired verification code', 400);
             }
 
             // Update password
@@ -344,24 +267,14 @@ class UserController extends Controller
                 'email' => $user->email
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Password changed successfully',
-                'data' => [
-                    'email' => $user->email
-                ]
-            ], 200);
+            return $this->success(['email' => $user->email], 'Password changed successfully');
         } catch (\Exception $e) {
             Log::error('Failed to change password', [
                 'user_id' => $request->user()->id ?? null,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to change password',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to change password', 500);
         }
     }
 
@@ -376,25 +289,11 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         try {
             $user = $request->user();
-
-            // Reject admin users
-            if ($user->role === 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin users cannot access this endpoint',
-                    'data' => null
-                ], 403);
-            }
-
             $newEmail = $request->new_email;
 
             // Generate verification code for new email
@@ -446,25 +345,17 @@ class UserController extends Controller
                 'new_email' => $newEmail
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Verification code sent to new email address',
-                'data' => [
-                    'new_email' => $newEmail,
-                    'expires_in_minutes' => 15
-                ]
-            ], 200);
+            return $this->success([
+                'new_email' => $newEmail,
+                'expires_in_minutes' => 15
+            ], 'Verification code sent to new email address');
         } catch (\Exception $e) {
             Log::error('Failed to request email change code', [
                 'user_id' => $request->user()->id ?? null,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send email change code',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to send email change code', 500);
         }
     }
 
@@ -480,25 +371,11 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => ['errors' => $validator->errors()]
-            ], 422);
+            return $this->error('Validation failed', 422, ['errors' => $validator->errors()]);
         }
 
         try {
             $user = $request->user();
-
-            // Reject admin users
-            if ($user->role === 'admin') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Admin users cannot access this endpoint',
-                    'data' => null
-                ], 403);
-            }
-
             $newEmail = $request->new_email;
             $code = $request->code;
 
@@ -512,11 +389,7 @@ class UserController extends Controller
                 ->first();
 
             if (!$verification) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired verification code',
-                    'data' => null
-                ], 400);
+                return $this->error('Invalid or expired verification code', 400);
             }
 
             // Check if new email is still available (race condition check)
@@ -525,11 +398,7 @@ class UserController extends Controller
                 ->exists();
 
             if ($emailExists) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This email address is already in use',
-                    'data' => null
-                ], 400);
+                return $this->error('This email address is already in use', 400);
             }
 
             $oldEmail = $user->email;
@@ -558,29 +427,21 @@ class UserController extends Controller
                 'new_email' => $newEmail
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Email changed successfully',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'email' => $user->email,
-                        'email_verified' => $user->is_email_verified,
-                        'updated_at' => $user->updated_at->toIso8601String()
-                    ]
+            return $this->success([
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'email_verified' => $user->is_email_verified,
+                    'updated_at' => $user->updated_at->toIso8601String()
                 ]
-            ], 200);
+            ], 'Email changed successfully');
         } catch (\Exception $e) {
             Log::error('Failed to change email', [
                 'user_id' => $request->user()->id ?? null,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to change email',
-                'data' => null
-            ], 500);
+            return $this->error('Failed to change email', 500);
         }
     }
 }
