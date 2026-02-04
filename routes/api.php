@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Public\ServiceController as PublicServiceController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VendorController;
+use App\Http\Controllers\Api\Vendor\ServiceController as VendorServiceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +36,12 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
 
+// Public services (no auth required)
+Route::prefix('services')->group(function () {
+    Route::get('/', [PublicServiceController::class, 'index']);
+    Route::get('/{id}', [PublicServiceController::class, 'show']);
+});
+
 // Protected routes (require Sanctum authentication + reject admin users)
 Route::middleware(['auth:sanctum', 'reject.admin'])->group(function () {
     // Auth
@@ -51,11 +59,21 @@ Route::middleware(['auth:sanctum', 'reject.admin'])->group(function () {
     Route::post('/user/change-email/request-code', [UserController::class, 'requestEmailChangeCode']);
     Route::post('/user/change-email/confirm', [UserController::class, 'confirmEmailChange']);
     
-    // Vendor routes
+    // Vendor profile routes
     Route::prefix('vendor')->group(function () {
         Route::get('/me', [VendorController::class, 'me']);
         Route::post('/apply', [VendorController::class, 'apply']);
         Route::put('/profile', [VendorController::class, 'updateProfile']);
         Route::get('/dashboard', [VendorController::class, 'dashboard']);
+        
+        // Vendor services management
+        Route::prefix('services')->group(function () {
+            Route::get('/', [VendorServiceController::class, 'index']);
+            Route::get('/{id}', [VendorServiceController::class, 'show']);
+            Route::post('/', [VendorServiceController::class, 'store']);
+            Route::put('/{id}', [VendorServiceController::class, 'update']);
+            Route::patch('/{id}/status', [VendorServiceController::class, 'updateStatus']);
+            Route::delete('/{id}', [VendorServiceController::class, 'destroy']);
+        });
     });
 });

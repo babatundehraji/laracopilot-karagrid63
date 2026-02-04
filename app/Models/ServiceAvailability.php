@@ -2,135 +2,118 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class ServiceAvailability extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'service_id',
-        'date',
+        'day_of_week',
         'start_time',
         'end_time',
-        'is_available'
+        'is_active'
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'is_available' => 'boolean'
+        'day_of_week' => 'integer',
+        'start_time' => 'datetime:H:i',
+        'end_time' => 'datetime:H:i',
+        'is_active' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
-    // Accessors
-    public function getFormattedDateAttribute()
-    {
-        return $this->date->format('l, F j, Y');
-    }
-
-    public function getTimeRangeAttribute()
-    {
-        if ($this->start_time && $this->end_time) {
-            return Carbon::parse($this->start_time)->format('g:i A') . ' - ' . Carbon::parse($this->end_time)->format('g:i A');
-        }
-        return 'All day';
-    }
-
-    public function getIsFullDayAttribute()
-    {
-        return is_null($this->start_time) && is_null($this->end_time);
-    }
-
-    public function getIsPastAttribute()
-    {
-        return $this->date->isPast();
-    }
-
-    public function getIsTodayAttribute()
-    {
-        return $this->date->isToday();
-    }
-
-    public function getIsFutureAttribute()
-    {
-        return $this->date->isFuture();
-    }
-
-    // Relationships
+    /**
+     * Relationship: Service
+     */
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
 
-    // Scopes
-    public function scopeAvailable($query)
+    /**
+     * Get day name from day_of_week number
+     */
+    public function getDayNameAttribute(): string
     {
-        return $query->where('is_available', true);
+        $days = [
+            0 => 'Sunday',
+            1 => 'Monday',
+            2 => 'Tuesday',
+            3 => 'Wednesday',
+            4 => 'Thursday',
+            5 => 'Friday',
+            6 => 'Saturday'
+        ];
+
+        return $days[$this->day_of_week] ?? 'Unknown';
     }
 
-    public function scopeUnavailable($query)
+    /**
+     * Get short day name
+     */
+    public function getDayShortNameAttribute(): string
     {
-        return $query->where('is_available', false);
+        $days = [
+            0 => 'Sun',
+            1 => 'Mon',
+            2 => 'Tue',
+            3 => 'Wed',
+            4 => 'Thu',
+            5 => 'Fri',
+            6 => 'Sat'
+        ];
+
+        return $days[$this->day_of_week] ?? 'N/A';
     }
 
-    public function scopeForService($query, $serviceId)
+    /**
+     * Get formatted time range
+     */
+    public function getTimeRangeAttribute(): string
     {
-        return $query->where('service_id', $serviceId);
+        return $this->start_time->format('g:i A') . ' - ' . $this->end_time->format('g:i A');
     }
 
-    public function scopeOnDate($query, $date)
+    /**
+     * Check if availability is currently active
+     */
+    public function isCurrentlyActive(): bool
     {
-        return $query->whereDate('date', $date);
+        if (!$this->is_active) {
+            return false;
+        }
+
+        $now = now();
+        $currentDayOfWeek = $now->dayOfWeek; // 0=Sunday ... 6=Saturday
+        $currentTime = $now->format('H:i:s');
+
+        return $this->day_of_week === $currentDayOfWeek
+            && $currentTime >= $this->start_time->format('H:i:s')
+            && $currentTime <= $this->end_time->format('H:i:s');
     }
 
-    public function scopeDateRange($query, $startDate, $endDate)
+    /**
+     * Scope: Active availabilities only
+     */
+    public function scopeActive($query)
     {
-        return $query->whereBetween('date', [$startDate, $endDate]);
+        return $query->where('is_active', true);
     }
 
-    public function scopeUpcoming($query)
+    /**
+     * Scope: Filter by specific day
+     */
+    public function scopeForDay($query, int $dayOfWeek)
     {
-        return $query->where('date', '>=', now()->toDateString())
-                     ->orderBy('date', 'asc');
+        return $query->where('day_of_week', $dayOfWeek);
     }
 
-    public function scopePast($query)
+    /**
+     * Scope: Order by day of week and start time
+     */
+    public function scopeOrdered($query)
     {
-        return $query->where('date', '<', now()->toDateString())
-                     ->orderBy('date', 'desc');
-    }
-
-    public function scopeToday($query)
-    {
-        return $query->whereDate('date', now()->toDateString());
-    }
-
-    public function scopeThisWeek($query)
-    {
-        return $query->whereBetween('date', [
-            now()->startOfWeek()->toDateString(),
-            now()->endOfWeek()->toDateString()
-        ]);
-    }
-
-    public function scopeThisMonth($query)
-    {
-        return $query->whereBetween('date', [
-            now()->startOfMonth()->toDateString(),
-            now()->endOfMonth()->toDateString()
-        ]);
-    }
-
-    public function scopeWithTimeSlot($query)
-    {
-        return $query->whereNotNull('start_time')
-                     ->whereNotNull('end_time');
-    }
-
-    public function scopeFullDay($query)
-    {
-        return $query->whereNull('start_time')
-                     ->whereNull('end_time');
+        return $query->orderBy('day_of_week')->orderBy('start_time');
     }
 }

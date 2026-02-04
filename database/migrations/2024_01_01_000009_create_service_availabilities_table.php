@@ -6,27 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('service_availabilities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained()->onDelete('cascade');
-            
-            $table->date('date');
-            $table->time('start_time')->nullable();
-            $table->time('end_time')->nullable();
-            $table->boolean('is_available')->default(true);
-            
+
+            $table->unsignedTinyInteger('day_of_week'); // 0=Sunday ... 6=Saturday
+            $table->time('start_time');
+            $table->time('end_time');
+            $table->boolean('is_active')->default(true);
+
             $table->timestamps();
-            
-            // Indexes
-            $table->index(['service_id', 'date']);
-            $table->index(['service_id', 'is_available']);
-            $table->unique(['service_id', 'date']);
+
+            $table->unique(['service_id', 'day_of_week']);
+            $table->index(['service_id', 'is_active']);
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('service_availabilities');
     }
