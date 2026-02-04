@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\VendorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -69,5 +70,13 @@ Route::middleware('auth:sanctum')->group(function () {
                 ]
             ]
         ]);
+    });
+    
+    // Vendor routes
+    Route::prefix('vendor')->group(function () {
+        Route::get('/me', [VendorController::class, 'me']);
+        Route::post('/apply', [VendorController::class, 'apply']);
+        Route::put('/profile', [VendorController::class, 'updateProfile']);
+        Route::get('/dashboard', [VendorController::class, 'dashboard']);
     });
 });
